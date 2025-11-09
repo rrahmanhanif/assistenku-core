@@ -51,4 +51,26 @@ const Transactions = () => {
   );
 };
 
+// ...import yang lama
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+// di dalam handleSubmit setelah addDoc transaksi:
+
+// update saldo otomatis
+const customerRef = doc(db, "wallets", "customer");
+const mitraRef = doc(db, "wallets", "mitra");
+const coreRef = doc(db, "wallets", "core");
+
+const cSnap = await getDoc(customerRef);
+const mSnap = await getDoc(mitraRef);
+const oSnap = await getDoc(coreRef);
+
+const customerBalance = cSnap.data()?.balance || 0;
+const mitraBalance = mSnap.data()?.balance || 0;
+const coreBalance = oSnap.data()?.balance || 0;
+
+// potong saldo customer, bagi ke mitra & core
+await updateDoc(customerRef, { balance: customerBalance - total });
+await updateDoc(mitraRef, { balance: mitraBalance + mitraShare });
+await updateDoc(coreRef, { balance: coreBalance + coreShare });
+
 export default Transactions;
