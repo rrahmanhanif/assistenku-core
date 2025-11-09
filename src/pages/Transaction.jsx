@@ -1,88 +1,54 @@
-import { useState } from "react";
-import TransactionTable from "../components/TransactionTable";
-import { calculateRevenue } from "../utils/calculator";
+import { useEffect, useState } from "react";
+import { db } from "../firebase";
+import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
 
-export default function Transactions() {
-  const [amount, setAmount] = useState("");
-  const [gatewayFee, setGatewayFee] = useState("");
-  const [results, setResults] = useState(null);
+const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
 
-  const handleCalculate = (e) => {
-    e.preventDefault();
-    const total = parseFloat(amount);
-    const fee = parseFloat(gatewayFee);
-    if (isNaN(total) || isNaN(fee)) return;
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "transactions"), (snapshot) => {
+      setTransactions(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsub();
+  }, []);
 
-    const res = calculateRevenue(total, fee);
-    setResults(res);
+  const handleCalculate = async (trx) => {
+    const coreShare = trx.amount * 0.25;
+    const mitraShare = trx.amount * 0.75;
+    const feePercent = trx.gatewayFee / trx.amount;
 
-    const newTransaction = {
-      id: `TRX-${Date.now()}`,
-      totalAmount: total,
-      gatewayFee: fee,
-      mitraShare: res.mitraShare,
-      coreShare: res.coreShare,
-      customerCharge: res.customerCharge,
-      date: new Date().toLocaleString(),
-    };
+    let customerPay = trx.amount;
+    let coreNet = coreShare;
 
-    setTransactions([newTransaction, ...transactions]);
+    if (feePercent > 0.02) {
+      customerPay += trx.gatewayFee;
+    } else {
+      coreNet -= trx.gatewayFee;
+    }
+
+    await updateDoc(doc(db, "transactions", trx.id), {
+      mitraShare,
+      coreNet,
+      customerPay,
+      destinationBank: "BRI 035901073215504 a/n Abdurrahman Hanif",
+    });
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2 style={{ color: "#0d6efd" }}>💰 Transaksi & Pembagian Hasil</h2>
-      <form onSubmit={handleCalculate} style={{ marginTop: "1rem" }}>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "1rem" }}>
-          <input
-            type="number"
-            placeholder="Total Pembayaran (Rp)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            style={{ padding: "10px", flex: 1 }}
-          />
-          <input
-            type="number"
-            placeholder="Biaya Gateway (Rp)"
-            value={gatewayFee}
-            onChange={(e) => setGatewayFee(e.target.value)}
-            required
-            style={{ padding: "10px", flex: 1 }}
-          />
-          <button
-            type="submit"
-            style={{
-              background: "#0d6efd",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              padding: "10px 20px",
-              cursor: "pointer",
-            }}
-          >
-            Hitung
-          </button>
-        </div>
-      </form>
-
-      {results && (
-        <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "#f8f9fa", borderRadius: "8px" }}>
-          <h4>📊 Hasil Pembagian:</h4>
-          <p>Total Pembayaran: Rp {results.totalAmount.toLocaleString()}</p>
-          <p>Mitra (75%): Rp {results.mitraShare.toLocaleString()}</p>
-          <p>Core (25%): Rp {results.coreShare.toLocaleString()}</p>
-          {results.customerCharge > 0 ? (
-            <p>Biaya Gateway dibebankan ke Customer: Rp {results.customerCharge.toLocaleString()}</p>
-          ) : (
-            <p>Biaya Gateway ditanggung Core (termasuk dalam 25%)</p>
+    <div>
+      <h3>Transaksi</h3>
+      {transactions.map((trx) => (
+        <div key={trx.id}>
+          <p>ID: {trx.id}</p>
+          <p>Nominal: Rp{trx.amount}</p>
+          <button onClick={() => handleCalculate(trx)}>Proses Pembagian</button>
+          {trx.mitraShare && (
+            <p>➡ Mitra: Rp{trx.mitraShare} | Core: Rp{trx.coreNet} | Dibayar Customer: Rp{trx.customerPay}</p>
           )}
-          <p>Persentase Gateway: {results.gatewayPercent.toFixed(2)}%</p>
         </div>
-      )}
-
-      <TransactionTable data={transactions} />
+      ))}
     </div>
   );
-}
+};
+
+export default Transactions;
