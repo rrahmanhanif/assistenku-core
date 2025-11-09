@@ -18,3 +18,5 @@
     "vite": "^5.3.4"
   }
 }
+
+npm install jspdf jspdf-autotable xlsx file-saver
