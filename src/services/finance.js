@@ -59,6 +59,9 @@ export async function withdrawMitra(mitraId, amount) {
 
   const saldoBaru = saldoSekarang - amount;
   await updateDoc(mitraRef, { saldo: saldoBaru });
+  await pushPopup(mitraId, "mitra", "Penarikan", `Penarikan Rp${amount.toLocaleString()} disetujui otomatis.`);
+await sendEmail("mitra@email.com", "Penarikan Disetujui", `Dana Rp${amount.toLocaleString()} telah dikirim.`);
+await pushPopup("admin", "core", "Penarikan", `Mitra ${mitraId} menarik Rp${amount.toLocaleString()}`);
 
   // auto approved (simulasi transfer ke rekening)
   await updateDoc(doc(db, "withdrawLogs", mitraId), {
