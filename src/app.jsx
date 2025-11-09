@@ -8,6 +8,8 @@ import Login from "./pages/Login";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
+import Wallet from "./pages/Wallet";
+<Route path="/wallet" element={<Wallet />} />
 
 function App() {
   const [user, setUser] = useState(null);
