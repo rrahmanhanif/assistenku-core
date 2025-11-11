@@ -1,8 +1,9 @@
+// src/services/notify.js
 import emailjs from "@emailjs/browser";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
-// === kirim email ===
+// === Kirim email ===
 export async function sendEmail(to, subject, message) {
   try {
     await emailjs.send(
@@ -16,14 +17,18 @@ export async function sendEmail(to, subject, message) {
   }
 }
 
-// === simpan log notifikasi (popup) ===
+// === Simpan log notifikasi (popup) ===
 export async function pushPopup(uid, role, type, text) {
-  await addDoc(collection(db, "notifications"), {
-    uid,
-    role,
-    type,
-    text,
-    read: false,
-    createdAt: serverTimestamp(),
-  });
+  try {
+    await addDoc(collection(db, "notifications"), {
+      uid,
+      role,
+      type,
+      text,
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("Gagal membuat notifikasi popup:", e);
+  }
 }
