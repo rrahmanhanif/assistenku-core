@@ -1,55 +1,54 @@
-import MapMonitor from "../components/MapMonitor";
-import MitraList from "../components/MitraList";
-import CustomerList from "../components/CustomerList";
-import Transactions from "./Transactions";
-import Notification from "../components/Notification";
-
-function DashboardAdmin() {
-  return (
-    <div className="p-6">
-      <Notification />
-      {/* ...konten dashboard lainnya */}
-    </div>
-  );
-}
-const DashboardAdmin = () => {
-  return (
-    <div className="dashboard">
-      <h2>Dashboard Admin — Assistenku Core</h2>
-      <Transactions />
-      <hr />
-      <MapMonitor />
-      <hr />
-      <MitraList />
-      <hr />
-      <CustomerList />
-    </div>
-  );
-};
-
+// src/pages/DashboardAdmin.jsx
+import React from "react";
 import MapMonitor from "../components/MapMonitor";
 import MitraList from "../components/MitraList";
 import CustomerList from "../components/CustomerList";
 import OrdersMonitor from "../components/OrdersMonitor";
-import Transactions from "./Transactions";
+import Transactions from "./Transactions"; // gunakan hanya sekali
 
 const DashboardAdmin = () => {
   return (
-    <div className="dashboard">
-      <h2>Assistenku-Core Dashboard</h2>
-      <OrdersMonitor />
-      <hr />
-      <Transactions />
-      <hr />
-      <MapMonitor />
-      <hr />
-      <MitraList />
-      <hr />
-      <CustomerList />
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-blue-700">Dashboard Admin</h1>
+        <p className="text-gray-500">Pantau aktivitas Mitra & Customer</p>
+      </header>
+
+      {/* Bagian utama grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 🗺️ Peta Real-time */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white p-4 rounded-xl shadow-sm">
+          <h2 className="text-lg font-semibold mb-3 text-gray-700">Peta Aktivitas</h2>
+          <MapMonitor />
+        </div>
+
+        {/* 👥 Daftar Mitra */}
+        <div className="bg-white p-4 rounded-xl shadow-sm">
+          <h2 className="text-lg font-semibold mb-3 text-gray-700">Mitra Aktif</h2>
+          <MitraList />
+        </div>
+
+        {/* 👤 Daftar Customer */}
+        <div className="bg-white p-4 rounded-xl shadow-sm">
+          <h2 className="text-lg font-semibold mb-3 text-gray-700">Customer Aktif</h2>
+          <CustomerList />
+        </div>
+
+        {/* 🧾 Order Aktif */}
+        <div className="bg-white p-4 rounded-xl shadow-sm md:col-span-2">
+          <h2 className="text-lg font-semibold mb-3 text-gray-700">Pesanan Berlangsung</h2>
+          <OrdersMonitor />
+        </div>
+
+        {/* 💰 Transaksi */}
+        <div className="bg-white p-4 rounded-xl shadow-sm md:col-span-3">
+          <h2 className="text-lg font-semibold mb-3 text-gray-700">Transaksi Terbaru</h2>
+          <Transactions />
+        </div>
+      </div>
     </div>
   );
 };
-
-export default DashboardAdmin;
 
 export default DashboardAdmin;
