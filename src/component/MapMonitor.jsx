@@ -1,8 +1,20 @@
-import { useEffect, useState } from "react";
+// src/components/MapMonitor.jsx
+import React, { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+
+// Fix untuk leaflet icon (Vercel tidak otomatis load icon)
+import L from "leaflet";
+import iconUrl from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl,
+  shadowUrl: iconShadow,
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const MapMonitor = () => {
   const [mitraData, setMitraData] = useState([]);
@@ -23,15 +35,19 @@ const MapMonitor = () => {
 
   return (
     <div className="map-container">
-      <MapContainer center={[-6.2, 106.8]} zoom={12} style={{ height: "500px", width: "100%" }}>
+      <MapContainer
+        center={[-6.2, 106.8]}
+        zoom={12}
+        style={{ height: "500px", width: "100%" }}
+      >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {mitraData.map((mitra, idx) => (
-          <Marker key={idx} position={[mitra.lat, mitra.lng]}>
+          <Marker key={`mitra-${idx}`} position={[mitra.lat, mitra.lng]}>
             <Popup>Mitra: {mitra.name}</Popup>
           </Marker>
         ))}
         {customerData.map((cust, idx) => (
-          <Marker key={idx} position={[cust.lat, cust.lng]}>
+          <Marker key={`cust-${idx}`} position={[cust.lat, cust.lng]}>
             <Popup>Customer: {cust.name}</Popup>
           </Marker>
         ))}
