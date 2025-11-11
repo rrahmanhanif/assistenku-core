@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 
-// Import halaman
+// ✅ Import halaman sesuai nama file di /src/pages
 import Login from "./pages/Login";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
 import Wallet from "./pages/Wallet";
-import WithdrawPage from "./pages/WithdrawPage"; // jika ada
+import Withdraw from "./pages/Withdraw"; // pastikan file-nya bernama "Withdraw.jsx" bukan "WithdrawPage.jsx"
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -64,7 +64,7 @@ export default function App() {
         />
         <Route
           path="/withdraw"
-          element={user ? <WithdrawPage /> : <Navigate to="/login" />}
+          element={user ? <Withdraw /> : <Navigate to="/login" />}
         />
 
         {/* 🔹 Halaman login */}
@@ -83,4 +83,4 @@ export default function App() {
       </Routes>
     </BrowserRouter>
   );
-}
+          }
