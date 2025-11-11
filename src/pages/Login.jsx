@@ -1,67 +1,66 @@
+// src/pages/Login.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { updateMitraActivity, watchMitraLocation } from "../utils/activitySync";
 
 export default function Login() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/");
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCred.user;
+
+      // Simpan status aktif ke Firestore
+      await updateMitraActivity(user.uid, {
+        uid: user.uid,
+        email: user.email,
+        status: "online",
+        lastLogin: new Date().toISOString(),
+      });
+
+      // 🔵 Aktifkan lokasi realtime mitra
+      watchMitraLocation(user.uid);
+
+      navigate("/dashboard");
     } catch (err) {
-      setError("Email atau password salah");
+      alert("Login gagal: " + err.message);
     }
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", justifyContent: "center", alignItems: "center", background: "#f5f7fa" }}>
+    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 to-blue-200">
       <form
         onSubmit={handleLogin}
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "10px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-          width: "300px",
-        }}
+        className="bg-white p-6 rounded-xl shadow-md w-80"
       >
-        <h2 style={{ textAlign: "center", marginBottom: "1rem", color: "#0d6efd" }}>Assistenku-Core</h2>
-        {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+        <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">
+          Login Mitra
+        </h2>
         <input
           type="email"
           placeholder="Email"
+          className="w-full border p-2 mb-3 rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
-          required
         />
         <input
           type="password"
           placeholder="Password"
+          className="w-full border p-2 mb-4 rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
-          required
         />
         <button
           type="submit"
-          style={{
-            width: "100%",
-            padding: "10px",
-            background: "#0d6efd",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
+          className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
         >
-          Masuk
+          Login
         </button>
       </form>
     </div>
