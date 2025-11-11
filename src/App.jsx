@@ -4,18 +4,22 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 
-// ✅ Import halaman sesuai nama file di /src/pages
+// ✅ Import halaman sesuai struktur /src/pages/
 import Login from "./pages/Login";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
 import Wallet from "./pages/Wallet";
-import Withdraw from "./pages/Withdraw"; // pastikan file-nya bernama "Withdraw.jsx" bukan "WithdrawPage.jsx"
+import Withdraw from "./pages/Withdraw";
+
+// ✅ Import komponen global (navbar, notifikasi, dll)
+import { Navbar, Notification } from "./components";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔐 Pantau status login Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -38,14 +42,18 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* 🔹 Navbar hanya tampil jika sudah login */}
+      {user && <Navbar />}
+
+      {/* 🔹 Area utama aplikasi */}
       <Routes>
-        {/* 🔹 Default route */}
+        {/* Default route */}
         <Route
           path="/"
           element={user ? <Navigate to="/dashboard" /> : <Login />}
         />
 
-        {/* 🔹 Halaman utama (hanya bisa diakses jika login) */}
+        {/* Halaman utama (hanya login) */}
         <Route
           path="/dashboard"
           element={user ? <DashboardAdmin /> : <Navigate to="/login" />}
@@ -67,13 +75,13 @@ export default function App() {
           element={user ? <Withdraw /> : <Navigate to="/login" />}
         />
 
-        {/* 🔹 Halaman login */}
+        {/* Halaman login */}
         <Route
           path="/login"
           element={!user ? <Login /> : <Navigate to="/dashboard" />}
         />
 
-        {/* 🔹 Fallback jika URL tidak dikenal */}
+        {/* Fallback jika URL tidak dikenal */}
         <Route
           path="*"
           element={
@@ -81,6 +89,9 @@ export default function App() {
           }
         />
       </Routes>
+
+      {/* 🔹 Komponen notifikasi global */}
+      {user && <Notification />}
     </BrowserRouter>
   );
           }
