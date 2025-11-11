@@ -1,13 +1,19 @@
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
 
-export default function MainLayout({ children, title }) {
+export default function MainLayout({ children }) {
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb" }}>
       <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar title={title} />
-        <main className="flex-1 p-6">{children}</main>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Navbar onLogout={handleLogout} />
+        <main style={{ padding: "1.5rem" }}>{children}</main>
       </div>
     </div>
   );
