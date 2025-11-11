@@ -9,12 +9,11 @@ import {
 } from "firebase/firestore";
 
 /**
- * Validasi order untuk mencegah order fiktif / ganda
- * @param {string} orderId - ID order unik
- * @param {string} customerId - ID customer pemesan
- * @param {string} mitraId - ID mitra penerima
- * @param {string} paymentMethod - cash / cashless
- * @param {number} total - total biaya
+ * Validasi order agar tidak fiktif atau ganda
+ * ------------------------------------------
+ * - Cegah order dobel
+ * - Validasi saldo customer (cashless)
+ * - Simpan order status awal: pending
  */
 export async function validateOrder(
   orderId,
@@ -26,29 +25,28 @@ export async function validateOrder(
   const orderRef = doc(db, "orders", orderId);
   const orderSnap = await getDoc(orderRef);
 
-  // 🚨 Cegah order ganda
   if (orderSnap.exists()) {
-    throw new Error("Order sudah pernah dibuat atau sedang berjalan!");
+    throw new Error("Order sudah pernah dibuat atau sedang aktif.");
   }
 
-  // 🔍 Validasi saldo customer jika cashless
+  // Jika metode cashless → cek saldo customer
   if (paymentMethod === "cashless") {
     const custRef = doc(db, "customers", customerId);
     const custSnap = await getDoc(custRef);
     const saldo = custSnap.data()?.saldo || 0;
 
     if (saldo < total) {
-      throw new Error("Saldo customer tidak mencukupi untuk memesan layanan ini.");
+      throw new Error("Saldo tidak mencukupi untuk memesan layanan ini.");
     }
 
-    // Kurangi saldo sementara (pre-authorization)
+    // tahan saldo sementara
     await updateDoc(custRef, {
       saldo: saldo - total,
       holdAmount: total,
     });
   }
 
-  // 🔒 Simpan status awal order di Core
+  // Simpan status awal order
   await setDoc(orderRef, {
     orderId,
     customerId,
