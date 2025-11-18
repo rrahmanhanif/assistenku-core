@@ -28,30 +28,32 @@ function App() {
 
   if (loading) {
     return (
-      <p style={{ textAlign: "center", marginTop: "2rem" }}>
+      <div style={{ textAlign: "center", marginTop: "2rem" }}>
         Memuat aplikasi...
-      </p>
+      </div>
     );
   }
+
+  const RequireAuth = ({ children }) => {
+    return user ? children : <Navigate to="/" replace />;
+  };
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login */}
+        {/* Halaman Login */}
         <Route
           path="/"
-          element={user ? <Navigate to="/dashboard" /> : <Login />}
+          element={user ? <Navigate to="/dashboard" replace /> : <Login />}
         />
 
         {/* Dashboard Admin */}
         <Route
           path="/dashboard"
           element={
-            user ? (
+            <RequireAuth>
               <DashboardAdmin onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" />
-            )
+            </RequireAuth>
           }
         />
 
@@ -59,16 +61,14 @@ function App() {
         <Route
           path="/finance"
           element={
-            user ? (
+            <RequireAuth>
               <DashboardFinance onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" />
-            )
+            </RequireAuth>
           }
         />
 
-        {/* 404 fallback */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* 404 Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
