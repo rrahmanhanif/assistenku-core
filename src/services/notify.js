@@ -1,9 +1,7 @@
-// src/services/notify.js
 import emailjs from "@emailjs/browser";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from "../firebase";
 
-// === Kirim email ===
 export async function sendEmail(to, subject, message) {
   try {
     await emailjs.send(
@@ -17,7 +15,6 @@ export async function sendEmail(to, subject, message) {
   }
 }
 
-// === Simpan log notifikasi (popup) ===
 export async function pushPopup(uid, role, type, text) {
   try {
     await addDoc(collection(db, "notifications"), {
