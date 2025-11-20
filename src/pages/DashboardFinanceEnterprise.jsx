@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import Navbar from "../components/Navbar";
+import { Line, Bar } from "react-chartjs-2";
 
-export default function DashboardFinance() {
+export default function DashboardFinanceEnterprise() {
   const [data, setData] = useState({
     core: [],
     mitra: [],
@@ -12,9 +13,13 @@ export default function DashboardFinance() {
     surge: [],
   });
 
+  const [dailyLabels, setDailyLabels] = useState([]);
+  const [dailyIncome, setDailyIncome] = useState([]);
+  const [grouped, setGrouped] = useState({});
+  const [filterDays, setFilterDays] = useState(7);
   const [loading, setLoading] = useState(true);
 
-  const sum = (arr) => arr.reduce((s, d) => s + (d.amount || 0), 0);
+  const sum = (a) => a.reduce((s, d) => s + (d.amount || 0), 0);
 
   const totalCore = sum(data.core);
   const totalMitra = sum(data.mitra);
@@ -25,6 +30,7 @@ export default function DashboardFinance() {
   const platformNet = totalCore + totalSurge - totalGateway;
   const grandTotal = totalCustomer;
 
+  // ===== LOAD ALL DATA =====
   useEffect(() => {
     const load = async () => {
       try {
@@ -34,6 +40,31 @@ export default function DashboardFinance() {
         const gateway = await getDocs(collection(db, "gateway_finance"));
         const surge = await getDocs(collection(db, "surge_finance"));
 
+        const allTrans = [
+          ...core.docs.map((d) => ({ ...d.data(), app: "Core" })),
+          ...mitra.docs.map((d) => ({ ...d.data(), app: "Mitra" })),
+          ...customer.docs.map((d) => ({ ...d.data(), app: "Customer" })),
+          ...gateway.docs.map((d) => ({ ...d.data(), app: "Gateway" })),
+          ...surge.docs.map((d) => ({ ...d.data(), app: "Surge" })),
+        ];
+
+        // Group by date
+        const groupedTemp = {};
+        allTrans.forEach((t) => {
+          if (!t.date) return;
+          const day = new Date(t.date).toLocaleDateString("id-ID");
+          if (!groupedTemp[day]) groupedTemp[day] = [];
+          groupedTemp[day].push(t);
+        });
+
+        const labels = Object.keys(groupedTemp).sort((a, b) => {
+          return new Date(a) - new Date(b);
+        });
+
+        const incomes = labels.map((l) =>
+          groupedTemp[l].reduce((s, x) => s + (x.amount || 0), 0)
+        );
+
         setData({
           core: core.docs.map((d) => d.data()),
           mitra: mitra.docs.map((d) => d.data()),
@@ -41,8 +72,12 @@ export default function DashboardFinance() {
           gateway: gateway.docs.map((d) => d.data()),
           surge: surge.docs.map((d) => d.data()),
         });
-      } catch (e) {
-        console.error("Finance fetch error:", e);
+
+        setGrouped(groupedTemp);
+        setDailyLabels(labels);
+        setDailyIncome(incomes);
+      } catch (err) {
+        console.error("Finance load error:", err);
       }
 
       setLoading(false);
@@ -61,7 +96,7 @@ export default function DashboardFinance() {
     </div>
   );
 
-  if (loading) return <p>Memuat dashboard...</p>;
+  if (loading) return <p className="p-6">Memuat dashboard...</p>;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -72,6 +107,7 @@ export default function DashboardFinance() {
           Dashboard Keuangan Assistenku (Enterprise)
         </h1>
 
+        {/* SUMMARY CARDS */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-6">
           <Card title="Customer Paid" value={totalCustomer} />
           <Card title="Mitra Dibayar" value={totalMitra} />
@@ -81,26 +117,34 @@ export default function DashboardFinance() {
           <Card title="Platform Net Income" value={platformNet} color="#cffafe" />
           <Card title="Grand Total Flow" value={grandTotal} color="#e0e7ff" />
         </div>
-      </div>
-    </div>
-  );
-            }            <option value="7">7 Hari Terakhir</option>
+
+        {/* FILTER RANGE */}
+        <div className="mb-6">
+          <label className="font-semibold text-gray-700">
+            Filter berdasarkan rentang hari:
+          </label>
+          <select
+            value={filterDays}
+            onChange={(e) => setFilterDays(Number(e.target.value))}
+            className="ml-2 p-2 rounded border"
+          >
+            <option value="1">Hari Ini</option>
+            <option value="7">7 Hari Terakhir</option>
             <option value="14">14 Hari</option>
             <option value="30">30 Hari</option>
           </select>
         </div>
 
-        {/* === DAILY CHART === */}
+        {/* DAILY LINE CHART */}
         <div className="bg-white p-4 rounded-xl shadow mb-8">
           <h2 className="text-lg font-bold mb-3">Grafik Pendapatan Harian</h2>
-
           <Line
             data={{
-              labels: dailyLabels,
+              labels: dailyLabels.slice(-filterDays),
               datasets: [
                 {
                   label: "Pendapatan Harian (Rp)",
-                  data: dailyIncome,
+                  data: dailyIncome.slice(-filterDays),
                   borderColor: "rgba(37, 99, 235, 1)",
                   backgroundColor: "rgba(37, 99, 235, 0.3)",
                   tension: 0.3,
@@ -110,25 +154,24 @@ export default function DashboardFinance() {
           />
         </div>
 
-        {/* === BAR CHART === */}
+        {/* DAILY BAR CHART */}
         <div className="bg-white p-4 rounded-xl shadow mb-8">
           <h2 className="text-lg font-bold mb-3">Total Pendapatan Per Hari</h2>
-
           <Bar
             data={{
-              labels: dailyLabels,
+              labels: dailyLabels.slice(-filterDays),
               datasets: [
                 {
                   label: "Total (Rp)",
-                  data: dailyIncome,
-                  backgroundColor: "rgba(59, 130, 246, 0.6)",
+                  data: dailyIncome.slice(-filterDays),
+                  backgroundColor: "rgba(59,130,246,0.6)",
                 },
               ],
             }}
           />
         </div>
 
-        {/* === TABLE GROUP BY DAY === */}
+        {/* GROUP TABLE */}
         <div className="bg-white rounded-xl shadow overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-blue-600 text-white">
@@ -140,31 +183,27 @@ export default function DashboardFinance() {
             </thead>
 
             <tbody>
-              {dailyLabels.map((day) => (
+              {dailyLabels.slice(-filterDays).map((day) => (
                 <tr key={day} className="border-b">
                   <td className="px-4 py-3 font-semibold">{day}</td>
                   <td className="px-4 py-3 text-green-600 font-bold">
                     Rp {dailyIncome[dailyLabels.indexOf(day)].toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
-                    <details className="cursor-pointer">
-                      <summary className="text-blue-600 underline">
-                        Lihat {grouped[day].length} transaksi
+                    <details>
+                      <summary className="text-blue-600 underline cursor-pointer">
+                        {grouped[day]?.length || 0} transaksi
                       </summary>
 
                       <ul className="mt-2 space-y-1 text-gray-700">
-                        {grouped[day].map((t) => (
-                          <li
-                            key={t.id}
-                            className="border p-2 rounded bg-gray-50"
-                          >
-                            <b>{t.app || "-"}</b> — Rp{" "}
-                            {t.amount?.toLocaleString("id-ID")}
+                        {grouped[day]?.map((t, i) => (
+                          <li key={i} className="border p-2 rounded bg-gray-50">
+                            <b>{t.app}</b> — Rp {t.amount?.toLocaleString()}
                             <br />
-                            {t.description || "Tanpa deskripsi"}
+                            {t.description}
                             <br />
                             <small className="text-gray-500">
-                              {t.date.toLocaleTimeString("id-ID")}
+                              {new Date(t.date).toLocaleTimeString("id-ID")}
                             </small>
                           </li>
                         ))}
@@ -178,27 +217,9 @@ export default function DashboardFinance() {
         </div>
 
         {loading && (
-          <p className="text-center py-6 text-blue-600">Memuat data...</p>
+          <p className="text-center py-4 text-blue-600">Memuat data...</p>
         )}
       </div>
     </div>
   );
-    }  background: "#f8f9fa",
-  borderRadius: "10px",
-  padding: "1rem",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-};
-
-const valueStyle = {
-  fontSize: "1.4rem",
-  fontWeight: "bold",
-  marginTop: "0.5rem",
-};
-
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-  background: "white",
-  borderRadius: "10px",
-  overflow: "hidden",
-};
+                                                 }
