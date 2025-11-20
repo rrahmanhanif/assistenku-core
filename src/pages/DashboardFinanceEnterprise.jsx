@@ -1,3 +1,5 @@
+import "../lib/chart"; // wajib untuk register chart.js
+import { Line, Bar } from "react-chartjs-2";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
