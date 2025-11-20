@@ -6,11 +6,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      strategies: "generateSW",
-      injectRegister: "auto",
       registerType: "autoUpdate",
+      injectRegister: "auto",
+      strategies: "generateSW",
 
-      // Disable ALL glob scanning
+      // Disable auto glob scanning to remove warnings on Vercel
       workbox: {
         globPatterns: [],
       },
@@ -18,19 +18,19 @@ export default defineConfig({
       manifest: {
         name: "Assistenku Core",
         short_name: "Assistenku",
-        theme_color: "#a8d8ff",
-        background_color: "#ffffff",
         display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "#a8d8ff",
         icons: [
           {
             src: "/icon-192.png",
-            type: "image/png",
             sizes: "192x192",
+            type: "image/png",
           },
           {
             src: "/icon-512.png",
-            type: "image/png",
             sizes: "512x512",
+            type: "image/png",
           },
         ],
       },
