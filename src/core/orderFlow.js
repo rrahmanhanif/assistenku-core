@@ -1,61 +1,150 @@
-// src/core/orderFlow.js
+// ===============================================
+// ORDER FLOW FINAL – ASSISTENKU CORE
+// Sudah termasuk: pricing, lembur, surge B, gateway, bagi hasil
+// ===============================================
+
 import { db } from "../firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { hitungBiaya } from "./pricing";
-import { processPayment } from "../services/finance";
-import { sendEmail } from "../services/notify";
+import { hitungBiayaDasar, hitungLembur } from "./pricing";
 
-export async function buatPesanan(customerId, mitraId, payload) {
-  const { serviceKey, paket, duration, lemburJam } = payload;
+// =====================================================
+// SURGE MODEL B (Demand-Supply Multiplier)
+// -----------------------------------------------------
+// Low Surge: orders > mitra * 1.2 → +10%
+// Mid Surge: orders > mitra * 1.5 → +20%
+// High Surge: orders > mitra * 2.0 → +35%
+// =====================================================
 
-  // 1. HITUNG BIAYA FINAL
-  const harga = hitungBiaya({ serviceKey, paket, duration, lemburJam });
+export function hitungSurge(orders, mitraOnline) {
+  if (mitraOnline <= 0) return { surge: 1, label: "No Mitra" };
 
-  const biayaCustomer = harga.grandTotal;
+  const ratio = orders / mitraOnline;
 
-  // 2. GATEWAY FEE (2%)
-  const gatewayFee = Math.round(biayaCustomer * 0.02);
+  if (ratio > 2.0) return { surge: 1.35, label: "HIGH SURGE" };
+  if (ratio > 1.5) return { surge: 1.20, label: "MID SURGE" };
+  if (ratio > 1.2) return { surge: 1.10, label: "LOW SURGE" };
 
-  let bayarCustomer = biayaCustomer + gatewayFee; // default: customer bayar 102%
+  return { surge: 1.0, label: "NORMAL" };
+}
 
-  // Jika 2% < Rp 2000 → core yang bayar gateway
-  const coreExtraFee = gatewayFee < 2000 ? gatewayFee : 0;
-  if (coreExtraFee > 0) bayarCustomer = biayaCustomer;
+// =====================================================
+// GATEWAY RULES
+// -----------------------------------------------------
+// Jika biaya gateway ≤ 2% total:
+//     ditanggung CORE (diambil dari jatah 25% core)
+// Jika biaya gateway > 2%:
+//     ditanggung CUSTOMER (ditambahkan ke total bayar)
+// =====================================================
 
-  // 3. BAGI HASIL
-  const mitraShare = Math.round(biayaCustomer * 0.75);
-  const coreShare = Math.round(biayaCustomer * 0.25) - coreExtraFee;
+export function hitungGateway(totalBiaya) {
+  const gatewayFee = Math.round(totalBiaya * 0.02); // 2%
 
-  // 4. SAVE ORDER
-  const orderRef = await addDoc(collection(db, "orders"), {
+  return {
+    gatewayFee,
+    isByCustomer: gatewayFee > totalBiaya * 0.02, // fallback, tetap hitung otomatis
+  };
+}
+
+// =====================================================
+// BAGI HASIL 75/25
+// =====================================================
+
+export function bagiHasil(totalSetelahSurge) {
+  const mitra = Math.round(totalSetelahSurge * 0.75);
+  const core = Math.round(totalSetelahSurge * 0.25);
+
+  return { mitra, core };
+}
+
+// =====================================================
+// HITUNG TOTAL ORDER FULL PIPELINE
+// =====================================================
+
+export function hitungOrderFinal({
+  serviceKey,
+  paket,
+  duration = 1,
+  overtimeHours = 0,
+  ordersNow,
+  mitraOnline,
+}) {
+  // --- Harga dasar ---
+  const dasar = hitungBiayaDasar({ serviceKey, type: paket, duration });
+
+  // --- Lembur (per jam) ---
+  const lemburTotal = hitungLembur({ serviceKey, overtimeHours });
+
+  // --- Surge ---
+  const surgeObj = hitungSurge(ordersNow, mitraOnline);
+  const totalSetelahSurge = Math.round((dasar + lemburTotal) * surgeObj.surge);
+
+  // --- Bagi hasil ---
+  const sharing = bagiHasil(totalSetelahSurge);
+
+  // --- Gateway fee ---
+  const gatewayFee = Math.round(totalSetelahSurge * 0.02);
+
+  // Gateway ditanggung siapa?
+  let customerPay = totalSetelahSurge;
+  let coreReceive = sharing.core;
+
+  if (gatewayFee <= Math.round(totalSetelahSurge * 0.02)) {
+    // Gateway kecil → ditanggung core
+    coreReceive -= gatewayFee;
+  } else {
+    // Gateway besar → ditanggung customer
+    customerPay += gatewayFee;
+  }
+
+  return {
+    dasar,
+    lemburTotal,
+    surge: surgeObj,
+    totalSetelahSurge,
+    gatewayFee,
+    mitraReceive: sharing.mitra,
+    coreReceive,
+    customerPay,
+  };
+}
+
+// =====================================================
+// BUAT PESANAN – SIMPAN FIRESTORE
+// =====================================================
+
+export async function buatPesanan(customerId, mitraId, input) {
+  const hasil = hitungOrderFinal(input);
+
+  const data = {
     customerId,
     mitraId,
-    serviceKey,
-    paket,
-    duration,
-    lemburJam,
-    surge: harga.surge,
-    biayaCustomer,
-    gatewayFee,
-    bayarCustomer,
-    mitraShare,
-    coreShare,
-    timestamp: serverTimestamp(),
+
+    serviceKey: input.serviceKey,
+    paket: input.paket,
+    duration: input.duration,
+    overtimeHours: input.overtimeHours,
+
+    pricing: {
+      dasar: hasil.dasar,
+      lembur: hasil.lemburTotal,
+      surgeLabel: hasil.surge.label,
+      surgeMultiplier: hasil.surge.surge,
+    },
+
+    gateway: {
+      fee: hasil.gatewayFee,
+    },
+
+    pembayaran: {
+      totalCustomer: hasil.customerPay,
+      mitraReceive: hasil.mitraReceive,
+      coreReceive: hasil.coreReceive,
+    },
+
+    waktuPesan: serverTimestamp(),
     status: "pending",
-  });
+  };
 
-  // 5. UPDATE SALDO
-  await processPayment(orderRef.id, {
-    mitraId,
-    customerId,
-    customerPay: bayarCustomer,
-    mitraShare,
-    coreShare,
-    gatewayFee,
-  });
-
-  // 6. NOTIF EMAIL
-  await sendEmail("admin@assistenku.com", "Order Baru", `Order ID: ${orderRef.id}`);
-
-  return orderRef.id;
-    }
+  await addDoc(collection(db, "orders"), data);
+  return data;
+}
