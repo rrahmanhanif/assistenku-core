@@ -1,25 +1,30 @@
 // src/services/finance.js
-import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
+import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "firebase/firestore";
 
-// === Tambah saldo & catat transaksi ===
-export async function processPayment(orderId, amount, mitraId, customerId) {
-  try {
-    // Tambahkan saldo ke mitra
-    const mitraRef = doc(db, "users", mitraId);
-    await updateDoc(mitraRef, { saldo: increment(amount) });
+// === Pembayaran setelah order ===
+export async function processPayment(orderId, data) {
+  const { mitraId, customerId, customerPay, mitraShare, coreShare, gatewayFee } = data;
 
-    // Catat history transaksi
-    await addDoc(collection(db, "payments"), {
-      orderId,
-      mitraId,
-      customerId,
-      amount,
-      type: "credit",
-      createdAt: serverTimestamp(),
-    });
+  // Update saldo mitra
+  const mitraRef = doc(db, "users", mitraId);
+  await updateDoc(mitraRef, { saldo: increment(mitraShare) });
 
-  } catch (e) {
-    console.error("Gagal memproses pembayaran:", e);
-  }
+  // Update saldo core
+  const coreRef = doc(db, "core", "finance");
+  await updateDoc(coreRef, { saldo: increment(coreShare) });
+
+  // Catat transaksi
+  await addDoc(collection(db, "transactions"), {
+    orderId,
+    mitraId,
+    customerId,
+    customerPay,
+    mitraShare,
+    coreShare,
+    gatewayFee,
+    type: "order",
+    status: "success",
+    timestamp: serverTimestamp(),
+  });
 }
