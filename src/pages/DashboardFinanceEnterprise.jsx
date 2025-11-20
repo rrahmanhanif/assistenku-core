@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import Navbar from "../components/Navbar";
 
-// Register Chart.js global config
+// REGISTER CHARTJS
 import "../components/Charts";
 
 import { Line, Bar } from "react-chartjs-2";
@@ -38,12 +38,10 @@ export default function DashboardFinanceEnterprise() {
     load();
   }, []);
 
-  // filter sesuai range
   const filtered = transactions.filter(
     (t) => t.date >= new Date(Date.now() - range * 86400000)
   );
 
-  // group per tanggal
   const grouped = {};
   filtered.forEach((t) => {
     const key = t.date.toLocaleDateString("id-ID");
@@ -67,7 +65,7 @@ export default function DashboardFinanceEnterprise() {
           Dashboard Finance Enterprise
         </h1>
 
-        {/* Rentang */}
+        {/* RANGE */}
         <div className="mb-4">
           <label className="font-semibold">Rentang Waktu:</label>
           <select
@@ -119,20 +117,4 @@ export default function DashboardFinanceEnterprise() {
       </div>
     </div>
   );
-      }          <Bar
-            data={{
-              labels,
-              datasets: [
-                {
-                  label: "Total (Rp)",
-                  data: dailyTotals,
-                  backgroundColor: "rgba(59,130,246,0.6)",
-                },
-              ],
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-          }
+    }
