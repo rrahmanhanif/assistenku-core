@@ -1,23 +1,23 @@
-// src/services/withdraw.js
-import { db } from "../firebase";
-import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "firebase/firestore";
+// ==========================================================
+// withdraw.js — Service Penarikan Dana Mitra (Enterprise)
+// ==========================================================
 
-export async function withdrawMitra(mitraId, amount) {
-  const fee = Math.round(amount * 0.007); // biaya bank 0.7%
-  const totalPotong = amount + fee;
+import { withdrawMitra } from "./finance";
 
-  const mitraRef = doc(db, "users", mitraId);
+/**
+ * Permintaan penarikan dari Mitra
+ * @param {string} mitraId 
+ * @param {number} amount 
+ */
+export async function requestWithdraw(mitraId, amount) {
+  if (!mitraId) throw new Error("ID Mitra wajib diisi.");
+  if (!amount || amount <= 0) throw new Error("Nominal tidak valid.");
 
-  await updateDoc(mitraRef, { saldo: increment(-totalPotong) });
+  // langsung verifikasi otomatis (sesuai kebijakan Assistenku)
+  const result = await withdrawMitra(mitraId, amount);
 
-  await addDoc(collection(db, "transactions"), {
-    mitraId,
-    amount,
-    fee,
-    type: "withdraw",
-    status: "success",
-    timestamp: serverTimestamp(),
-  });
-
-  return true;
+  return {
+    success: true,
+    ...result,
+  };
 }
