@@ -1,109 +1,90 @@
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
 import { db } from "../firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  where,
-} from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
+import Navbar from "../components/Navbar";
 
-import {
-  Line,
-  Bar,
-} from "react-chartjs-2";
-
-import {
-  Chart as ChartJS,
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  Legend
-);
-
-export default function DashboardFinanceEnterprise({ onLogout }) {
-  const [transactions, setTransactions] = useState([]);
-  const [range, setRange] = useState("7"); // default 7 hari
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadData(range);
-  }, [range]);
-
-  async function loadData(days) {
-    setLoading(true);
-
-    try {
-      const now = new Date();
-      const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
-      const q = query(
-        collection(db, "transactions"),
-        where("createdAt", ">=", past),
-        orderBy("createdAt", "desc")
-      );
-
-      const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-        date: d.data().createdAt?.toDate(),
-      }));
-
-      setTransactions(list);
-    } catch (e) {
-      console.error(e);
-    }
-
-    setLoading(false);
-  }
-
-  // ==== GROUP DATA PER DAY ====
-  const grouped = {};
-  transactions.forEach((t) => {
-    const d = t.date.toLocaleDateString("id-ID");
-    if (!grouped[d]) grouped[d] = [];
-    grouped[d].push(t);
+export default function DashboardFinance() {
+  const [data, setData] = useState({
+    core: [],
+    mitra: [],
+    customer: [],
+    gateway: [],
+    surge: [],
   });
 
-  const dailyLabels = Object.keys(grouped).reverse();
-  const dailyIncome = dailyLabels.map((d) =>
-    grouped[d].reduce((sum, x) => sum + (x.amount || 0), 0)
+  const [loading, setLoading] = useState(true);
+
+  const sum = (arr) => arr.reduce((s, d) => s + (d.amount || 0), 0);
+
+  const totalCore = sum(data.core);
+  const totalMitra = sum(data.mitra);
+  const totalCustomer = sum(data.customer);
+  const totalGateway = sum(data.gateway);
+  const totalSurge = sum(data.surge);
+
+  const platformNet = totalCore + totalSurge - totalGateway;
+  const grandTotal = totalCustomer;
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const core = await getDocs(collection(db, "core_finance"));
+        const mitra = await getDocs(collection(db, "mitra_finance"));
+        const customer = await getDocs(collection(db, "customer_finance"));
+        const gateway = await getDocs(collection(db, "gateway_finance"));
+        const surge = await getDocs(collection(db, "surge_finance"));
+
+        setData({
+          core: core.docs.map((d) => d.data()),
+          mitra: mitra.docs.map((d) => d.data()),
+          customer: customer.docs.map((d) => d.data()),
+          gateway: gateway.docs.map((d) => d.data()),
+          surge: surge.docs.map((d) => d.data()),
+        });
+      } catch (e) {
+        console.error("Finance fetch error:", e);
+      }
+
+      setLoading(false);
+    };
+
+    load();
+  }, []);
+
+  const Card = ({ title, value, color }) => (
+    <div
+      className="p-4 rounded-xl shadow text-center"
+      style={{ background: color || "#f7f9fc" }}
+    >
+      <h3 className="text-gray-600 text-sm">{title}</h3>
+      <p className="text-xl font-bold mt-1">Rp {value.toLocaleString()}</p>
+    </div>
   );
+
+  if (loading) return <p>Memuat dashboard...</p>;
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <Navbar onLogout={onLogout} />
+      <Navbar />
 
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-blue-700 mb-6">
-          Dashboard Finance — Enterprise Mode
+        <h1 className="text-2xl font-bold text-blue-700 mb-4">
+          Dashboard Keuangan Assistenku (Enterprise)
         </h1>
 
-        {/* FILTER */}
-        <div className="flex gap-3 mb-6">
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            className="border p-2 rounded-lg shadow-sm"
-          >
-            <option value="1">Hari Ini</option>
-            <option value="2">2 Hari</option>
-            <option value="7">7 Hari Terakhir</option>
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-6">
+          <Card title="Customer Paid" value={totalCustomer} />
+          <Card title="Mitra Dibayar" value={totalMitra} />
+          <Card title="Core Revenue" value={totalCore} color="#dbeafe" />
+          <Card title="Surge Income" value={totalSurge} color="#e0f2fe" />
+          <Card title="Gateway Fee Cost" value={totalGateway} color="#fee2e2" />
+          <Card title="Platform Net Income" value={platformNet} color="#cffafe" />
+          <Card title="Grand Total Flow" value={grandTotal} color="#e0e7ff" />
+        </div>
+      </div>
+    </div>
+  );
+            }            <option value="7">7 Hari Terakhir</option>
             <option value="14">14 Hari</option>
             <option value="30">30 Hari</option>
           </select>
