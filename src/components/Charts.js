@@ -1,26 +1,23 @@
 // src/components/Charts.js
 import {
   Chart as ChartJS,
+  LineElement,
+  BarElement,
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
-  BarElement,
   Tooltip,
   Legend,
-  Title
 } from "chart.js";
 
-// WAJIB registrasi, kalau tidak → error saat build
 ChartJS.register(
+  LineElement,
+  BarElement,
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
-  BarElement,
   Tooltip,
-  Legend,
-  Title
+  Legend
 );
 
 export default ChartJS;
