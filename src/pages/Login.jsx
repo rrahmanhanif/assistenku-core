@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import { updateMitraActivity, watchMitraLocation } from "../utils/activitySync";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,16 +16,13 @@ export default function Login() {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const user = userCred.user;
 
-      // Simpan status aktif ke Firestore
-      await updateMitraActivity(user.uid, {
-        uid: user.uid,
-        email: user.email,
-        status: "online",
-        lastLogin: new Date().toISOString(),
-      });
+      // cek role user dari Firestore
+      const snap = await getDoc(doc(db, "core_users", user.uid));
 
-      // 🔵 Aktifkan lokasi realtime mitra
-      watchMitraLocation(user.uid);
+      if (!snap.exists()) {
+        alert("Akun tidak memiliki role. Hubungi superadmin.");
+        return;
+      }
 
       navigate("/dashboard");
     } catch (err) {
@@ -35,13 +32,9 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 to-blue-200">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-6 rounded-xl shadow-md w-80"
-      >
-        <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">
-          Login Mitra
-        </h2>
+      <form onSubmit={handleLogin} className="bg-white p-6 rounded-xl shadow-md w-80">
+        <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">Login Admin</h2>
+
         <input
           type="email"
           placeholder="Email"
@@ -49,6 +42,7 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
         <input
           type="password"
           placeholder="Password"
@@ -56,10 +50,8 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
-        >
+
+        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-semibold">
           Login
         </button>
       </form>
