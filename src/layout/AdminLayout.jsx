@@ -1,20 +1,16 @@
+// src/layout/AdminLayout.jsx
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
 export default function AdminLayout({ children, onLogout }) {
   return (
-    <div style={{ display: "flex" }}>
-      {/* Sidebar */}
+    <div className="flex">
       <Sidebar />
 
-      {/* Main Content */}
-      <div style={{ marginLeft: "240px", width: "100%" }}>
+      <main className="flex-1 ml-64 bg-gray-50 min-h-screen">
         <Navbar onLogout={onLogout} />
-
-        <div style={{ padding: "20px" }}>
-          {children}
-        </div>
-      </div>
+        <div className="p-6">{children}</div>
+      </main>
     </div>
   );
 }
