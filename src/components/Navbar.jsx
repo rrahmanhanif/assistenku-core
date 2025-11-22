@@ -1,38 +1,28 @@
 // src/components/Navbar.jsx
-import React from "react";
-
 export default function Navbar({ onLogout }) {
   return (
     <nav
       style={{
-        background: "#0d6efd",
+        background: "white",
         padding: "1rem",
-        color: "white",
+        borderBottom: "1px solid #e5e5e5",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "flex-end",
         position: "sticky",
         top: 0,
-        zIndex: 1000,
-        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+        zIndex: 100,
       }}
     >
-      <div style={{ fontSize: "1.3rem", fontWeight: "700" }}>
-        Assistenku-Core Admin
-      </div>
-
       <button
         onClick={onLogout}
         style={{
-          background: "white",
-          color: "#0d6efd",
-          border: "none",
-          borderRadius: "8px",
+          background: "#dc3545",
+          color: "white",
           padding: "8px 14px",
+          border: "none",
+          borderRadius: "6px",
           cursor: "pointer",
           fontWeight: "600",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-          transition: "0.2s",
         }}
       >
         Logout
