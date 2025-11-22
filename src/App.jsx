@@ -20,9 +20,9 @@ export default function App() {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ==========================
-  //  CEK LOGIN + ROLE FIRESTORE
-  // ==========================
+  // ---------------------------
+  // CEK LOGIN + AMBIL ROLE
+  // ---------------------------
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -32,17 +32,17 @@ export default function App() {
         return;
       }
 
+      // Ambil role dari Firestore
       const ref = doc(db, "core_users", user.uid);
       const snap = await getDoc(ref);
 
-      if (snap.exists()) {
-        setCurrentUser(user);
-        setRole(snap.data().role || "viewer");
-      } else {
-        // Jika dokumen tidak ada → logout otomatis
+      if (!snap.exists()) {
         await signOut(auth);
         setCurrentUser(null);
         setRole(null);
+      } else {
+        setCurrentUser(user);
+        setRole(snap.data().role || "viewer");
       }
 
       setLoading(false);
@@ -53,22 +53,25 @@ export default function App() {
 
   if (loading) return <div style={{ padding: 30 }}>Memuat...</div>;
 
-  // ==========================
-  //  PROTECT ROUTE
-  // ==========================
-  function ProtectedRoute({ children, allow }) {
+  // ---------------------------
+  // PROTECT ROUTE
+  // ---------------------------
+  function ProtectedRoute({ allow, children }) {
     if (!currentUser) return <Navigate to="/" replace />;
     if (!allow.includes(role)) return <Navigate to="/dashboard" replace />;
     return children;
   }
 
+  // ---------------------------
+  // RENDER UTAMA
+  // ---------------------------
   return (
     <Router>
       <Routes>
-        {/* LOGIN PAGE */}
+        {/* LOGIN */}
         <Route path="/" element={<Login />} />
 
-        {/* DASHBOARD (boleh semua role) */}
+        {/* DASHBOARD (SEMUA ROLE BOLEH) */}
         <Route
           path="/dashboard"
           element={
@@ -80,7 +83,7 @@ export default function App() {
           }
         />
 
-        {/* FINANCE (hanya superadmin) */}
+        {/* FINANCE (KHUSUS SUPERADMIN) */}
         <Route
           path="/finance"
           element={
@@ -128,7 +131,7 @@ export default function App() {
           }
         />
 
-        {/* Redirect default */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
