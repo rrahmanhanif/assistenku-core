@@ -7,9 +7,11 @@ export default function AdminLayout({ children, onLogout }) {
     <div className="flex">
       <Sidebar />
 
-      <main className="flex-1 ml-64 bg-gray-50 min-h-screen">
+      <main className="flex-1 ml-64">
         <Navbar onLogout={onLogout} />
-        <div className="p-6">{children}</div>
+        <div className="p-6">
+          {children}
+        </div>
       </main>
     </div>
   );
