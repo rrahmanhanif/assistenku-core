@@ -2,66 +2,73 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "./firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 
-// Pages
-import Login from "./pages/Login.jsx";
-import DashboardAdmin from "./pages/DashboardAdmin.jsx";
-import DashboardFinanceEnterprise from "./pages/DashboardFinanceEnterprise.jsx";
+import Login from "./pages/Login";
+import DashboardAdmin from "./pages/DashboardAdmin";
+import DashboardFinanceEnterprise from "./pages/DashboardFinanceEnterprise";
+import AdminLayout from "./layout/AdminLayout";
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+
+      if (u) {
+        const snap = await getDoc(doc(db, "core_users", u.uid));
+        setRole(snap.exists() ? snap.data().role : "viewer");
+      }
+
       setLoading(false);
     });
+
     return () => unsub();
   }, []);
 
   const logoutNow = async () => {
     await signOut(auth);
     setUser(null);
+    setRole(null);
   };
 
-  if (loading) {
-    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Memuat aplikasi...</p>;
-  }
+  if (loading) return <p style={{ padding: 20 }}>Memuat...</p>;
 
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
 
-        {/* LOGIN */}
-        <Route
-          path="/"
-          element={user ? <Navigate to="/dashboard" /> : <Login />}
-        />
-
-        {/* Tambahan: /login langsung arahkan ke "/" */}
-        <Route path="/login" element={<Navigate to="/" />} />
-
-        {/* DASHBOARD ADMIN */}
         <Route
           path="/dashboard"
-          element={user ? <DashboardAdmin onLogout={logoutNow} /> : <Navigate to="/" />}
-        />
-
-        {/* FINANCE */}
-        <Route
-          path="/finance"
           element={
             user ? (
-              <DashboardFinanceEnterprise onLogout={logoutNow} />
+              <AdminLayout onLogout={logoutNow} role={role}>
+                <DashboardAdmin role={role} />
+              </AdminLayout>
             ) : (
               <Navigate to="/" />
             )
           }
         />
 
-        {/* Fallback */}
+        <Route
+          path="/finance"
+          element={
+            user ? (
+              <AdminLayout onLogout={logoutNow} role={role}>
+                <DashboardFinanceEnterprise role={role} />
+              </AdminLayout>
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
