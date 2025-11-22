@@ -17,13 +17,12 @@ export default function App() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-
       if (u) {
         const snap = await getDoc(doc(db, "core_users", u.uid));
         setRole(snap.exists() ? snap.data().role : "viewer");
       }
 
+      setUser(u);
       setLoading(false);
     });
 
@@ -36,12 +35,15 @@ export default function App() {
     setRole(null);
   };
 
-  if (loading) return <p style={{ padding: 20 }}>Memuat...</p>;
+  if (loading) return <div style={{ padding: 30 }}>Memuat...</div>;
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+        <Route
+          path="/"
+          element={user ? <Navigate to="/dashboard" /> : <Login />}
+        />
 
         <Route
           path="/dashboard"
