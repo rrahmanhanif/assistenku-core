@@ -1,6 +1,0 @@
-<div>
-  <Navbar />
-  <div className="p-6 pt-20">
-    {children}
-  </div>
-</div>
