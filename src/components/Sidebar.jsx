@@ -1,31 +1,29 @@
 // src/components/Sidebar.jsx
-import { Link } from "react-router-dom";
-
 export default function Sidebar() {
   return (
-    <aside className="fixed left-0 top-0 w-64 h-full bg-blue-600 text-white p-4 space-y-2">
-      <h2 className="text-xl font-bold mb-4">Assistenku Admin</h2>
+    <aside className="w-64 h-screen fixed left-0 top-0 bg-white shadow-md p-4">
+      <h2 className="text-xl font-bold text-blue-600 mb-4">Assistenku-Core</h2>
 
       <nav className="space-y-2">
-        <Link to="/dashboard" className="block p-2 rounded hover:bg-blue-500">
+        <a href="/dashboard" className="block p-2 rounded hover:bg-blue-100">
           Dashboard Utama
-        </Link>
+        </a>
 
-        <Link to="/finance" className="block p-2 rounded hover:bg-blue-500">
+        <a href="/finance" className="block p-2 rounded hover:bg-blue-100">
           💰 Finance Enterprise
-        </Link>
+        </a>
 
-        <Link to="/reports" className="block p-2 rounded hover:bg-blue-500">
+        <a href="/reports" className="block p-2 rounded hover:bg-blue-100">
           📊 Laporan Bulanan
-        </Link>
+        </a>
 
-        <Link to="/transactions" className="block p-2 rounded hover:bg-blue-500">
+        <a href="/transactions" className="block p-2 rounded hover:bg-blue-100">
           🧾 Riwayat Transaksi
-        </Link>
+        </a>
 
-        <Link to="/wallet" className="block p-2 rounded hover:bg-blue-500">
+        <a href="/wallet" className="block p-2 rounded hover:bg-blue-100">
           💼 Dompet Digital
-        </Link>
+        </a>
       </nav>
     </aside>
   );
