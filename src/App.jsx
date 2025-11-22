@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 
-// PAGES
+// Pages
 import Login from "./pages/Login.jsx";
 import DashboardAdmin from "./pages/DashboardAdmin.jsx";
 import DashboardFinanceEnterprise from "./pages/DashboardFinanceEnterprise.jsx";
@@ -27,31 +27,29 @@ export default function App() {
   };
 
   if (loading) {
-    return (
-      <p style={{ textAlign: "center", marginTop: "2rem" }}>
-        Memuat aplikasi...
-      </p>
-    );
+    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Memuat aplikasi...</p>;
   }
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login */}
+
+        {/* LOGIN */}
         <Route
           path="/"
           element={user ? <Navigate to="/dashboard" /> : <Login />}
         />
 
-        {/* Dashboard Admin */}
+        {/* Tambahan: /login langsung arahkan ke "/" */}
+        <Route path="/login" element={<Navigate to="/" />} />
+
+        {/* DASHBOARD ADMIN */}
         <Route
           path="/dashboard"
-          element={
-            user ? <DashboardAdmin onLogout={logoutNow} /> : <Navigate to="/" />
-          }
+          element={user ? <DashboardAdmin onLogout={logoutNow} /> : <Navigate to="/" />}
         />
 
-        {/* Dashboard Finance Enterprise */}
+        {/* FINANCE */}
         <Route
           path="/finance"
           element={
