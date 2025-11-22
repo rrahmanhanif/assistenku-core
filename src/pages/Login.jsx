@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,15 +16,22 @@ export default function Login() {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const user = userCred.user;
 
-      // cek role user dari Firestore
-      const snap = await getDoc(doc(db, "core_users", user.uid));
+      // 🔵 CEK ROLE DI FIRESTORE
+      const ref = doc(db, "core_users", user.uid);
+      const snap = await getDoc(ref);
 
+      // 🔵 Jika belum ada data role → isi Superadmin default
       if (!snap.exists()) {
-        alert("Akun tidak memiliki role. Hubungi superadmin.");
-        return;
+        await setDoc(ref, {
+          uid: user.uid,
+          email: user.email,
+          role: "superadmin",
+          createdAt: new Date().toISOString(),
+        });
       }
 
       navigate("/dashboard");
+
     } catch (err) {
       alert("Login gagal: " + err.message);
     }
@@ -32,8 +39,13 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 to-blue-200">
-      <form onSubmit={handleLogin} className="bg-white p-6 rounded-xl shadow-md w-80">
-        <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">Login Admin</h2>
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-6 rounded-xl shadow-md w-80"
+      >
+        <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">
+          Login Admin
+        </h2>
 
         <input
           type="email"
@@ -51,7 +63,10 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-semibold">
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
+        >
           Login
         </button>
       </form>
