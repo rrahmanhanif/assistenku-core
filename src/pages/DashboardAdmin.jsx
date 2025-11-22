@@ -1,30 +1,12 @@
 // src/pages/DashboardAdmin.jsx
 import React from "react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
-import useRealtimeData from "../hooks/useRealtimeData";
 import Navbar from "../components/Navbar";
+import useRealtimeData from "../hooks/useRealtimeData";
 import { buatPesanan } from "../core/orderFlow";
 
-export default function DashboardAdmin() {
-  const navigate = useNavigate();
+export default function DashboardAdmin({ onLogout }) {
   const { mitra, customer, orders, transactions } = useRealtimeData();
 
-  // ============================
-  // 🔹 FUNGSI LOGOUT
-  // ============================
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate("/login"); // arahkan ke halaman login admin
-    } catch (err) {
-      console.error("Logout error:", err);
-      alert("Gagal logout!");
-    }
-  };
-
-  // 🔹 Simulasi Pesanan
   const handleSimulasiOrder = async () => {
     try {
       await buatPesanan("cust001", "mitra001", {
@@ -35,17 +17,15 @@ export default function DashboardAdmin() {
         isCancel: false,
         baseRate: 150000,
       });
-      alert("✓ Simulasi Order berhasil tersimpan!");
-    } catch (error) {
-      alert("✗ Error: " + error.message);
+      alert("✓ Simulasi Order berhasil!");
+    } catch (err) {
+      alert("✗ Error: " + err.message);
     }
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-
-      {/* ⬅️ Kirim fungsi logout ke Navbar */}
-      <Navbar onLogout={handleLogout} />
+      <Navbar onLogout={onLogout} />
 
       <div className="p-6">
         <h1 className="text-2xl font-bold text-blue-700 mb-2">
@@ -96,10 +76,7 @@ function DataCard({ title, data }) {
         ) : (
           <ul className="text-sm text-gray-600 space-y-2">
             {data.map((item, index) => (
-              <li
-                key={item.id || index}
-                className="border-b border-gray-100 pb-1 break-words"
-              >
+              <li key={index} className="border-b border-gray-100 pb-1">
                 {JSON.stringify(item)}
               </li>
             ))}
